@@ -1,0 +1,3 @@
+[submodule "mobile-tests"]
+	path = mobile-tests
+	url = git@github.com:dimagi/CCODK-Automated-Tests.git
