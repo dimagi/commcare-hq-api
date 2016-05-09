@@ -1,5 +1,5 @@
 import requests
-from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from config import BASE_URL, DOMAIN, \
     USERNAME, PASSWORD
 
@@ -40,15 +40,16 @@ def make_api_request(url):
         raise Exception("Request {0} failed (code {1})".format(url,
                                                                r.status_code))
 
-
 def upload_fixture(url, filename):
-    headers = {'Content-Type': 'multipart/form-data'}
-    file_data = {'file-to-upload': ("test.xlsx", open(filename, 'rb')),
-                 'replace': (None, 'true')}
+    file_data = {'file-to-upload': (filename, open(filename, 'rb'), 'multipart/form-data')}
     r = requests.post(
         url=url,
         files=file_data,
-        headers=headers,
-        auth=HTTPBasicAuth(USERNAME, PASSWORD))
-
+        data={'replace': 'true'},
+        auth=HTTPDigestAuth(USERNAME, PASSWORD)
+    )
     return r
+
+filename = "../test.xlsx"
+url = "https://www.commcarehq.org/a/esoergel/fixtures/fixapi/"
+r = upload_fixture(url, filename)
