@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from config import BASE_URL, DOMAIN, \
-    SERVER_USERNAME, SERVER_PASSWORD
+    USERNAME, PASSWORD
 
 DOMAIN_URL = "{0}/a/{1}".format(BASE_URL, DOMAIN)
 FORMS_URL = "{0}/api/v0.5/form/".format(DOMAIN_URL)
@@ -32,10 +32,23 @@ def get_form_attachments(form_id):
 def make_api_request(url):
     r = requests.get(
         url=url,
-        auth=HTTPBasicAuth(SERVER_USERNAME, SERVER_PASSWORD))
+        auth=HTTPBasicAuth(USERNAME, PASSWORD))
 
     if r.status_code == 200:
         return r.json()
     else:
         raise Exception("Request {0} failed (code {1})".format(url,
                                                                r.status_code))
+
+
+def upload_fixture(url, filename):
+    headers = {'Content-Type': 'multipart/form-data'}
+    file_data = {'file-to-upload': ("test.xlsx", open(filename, 'rb')),
+                 'replace': (None, 'true')}
+    r = requests.post(
+        url=url,
+        files=file_data,
+        headers=headers,
+        auth=HTTPBasicAuth(USERNAME, PASSWORD))
+
+    return r
