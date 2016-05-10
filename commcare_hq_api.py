@@ -11,8 +11,8 @@ from configparser import ConfigParser
 
 class HqApi(object):
     def __init__(self, base_url, domain, version, username, password):
-        self.username = username
-        self.password = password
+        self._username = username
+        self._password = password
         self._api_version = version
         self._domain = domain
         self._base_url = base_url
@@ -87,7 +87,7 @@ class HqApi(object):
             url=url,
             files=file_data,
             data={'replace': 'true'},
-            auth=HTTPDigestAuth(self.username, self.password)
+            auth=HTTPDigestAuth(self._username, self._password)
         )
         return r
 
@@ -96,7 +96,7 @@ class HqApi(object):
         url = "{0}/{1}/".format(domain, action)
         r = requests.get(
             url=url,
-            auth=HTTPBasicAuth(self.username, self.password))
+            auth=HTTPBasicAuth(self._username, self._password))
 
         if r.status_code == 200:
             return r.json()
@@ -129,24 +129,31 @@ def main():
                                                                  arg_count))
         sys.exit(0)
 
-    command = sys.argv[1]
+    dispatch_command(sys.argv[1:], hq_api)
+
+
+# [List-of String] HqApi -> None
+def dispatch_command(args, hq_api):
+    command = args[0]
 
     if command == 'upload_fixture':
-        filename = sys.argv[2]
+        filename = args[1]
         print(filename)
-        print(hq_api.upload_fixture(filename))
+        if hq_api.upload_fixture(filename).status_code != 200:
+            sys.exit(1)
     elif command == 'cases':
         print(hq_api.get_cases())
     elif command == 'case':
-        case_id = sys.argv[2]
+        case_id = args[1]
         print(hq_api.get_case(case_id))
     elif command == 'forms':
         hq_api.get_forms()
     elif command == 'form':
-        form_id = sys.argv[2]
+        form_id = args[1]
         print(hq_api.get_form(form_id))
     elif command == 'help':
         print("")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
