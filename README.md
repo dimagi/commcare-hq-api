@@ -1,21 +1,20 @@
-# CommCare Integration Tests
-Tests integration between CommCare mobile and server products
+# CommCare HQ API Library
+Work-in-progress Python library for accessing CommCare HQ API end-points.
 
 ### Setup
 
-+ `submodule update --init`
-+ install `calabash-android` and `androidviewclient`
-+ Copy `auth.conf.template` to `auth.conf`with the appropriate login info
++ Copy `auth.conf.template` to `auth.conf` with the appropriate login info
 
 
-### Running
+### Running from command-line
 
-+ Build the CommCare apk (or setup the keystore correctly and download a build from jenkins)
-+ `./run_mobile_tests`
-+ wait some unspecified amount of time
-+ `./run_server_tests`
++ `python3 commcare_hq_api.py cases`
++ `python3 commcare_hq_api.py case some-case-id`
++ `python3 commcare_hq_api.py forms`
++ `python3 commcare_hq_api.py upload_fixture some-excel-file.xlsx`
++ etc..
 
 
-### Adding tests
+### Usage in python
 
 + ...

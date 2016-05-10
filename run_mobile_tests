@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# run the mobile tests using the provided apk
-calabash-android run $1 --tags @IntegrationTest
