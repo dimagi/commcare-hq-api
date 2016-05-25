@@ -37,6 +37,12 @@ class HqApi(object):
     def get_form(self, form_id):
         return self.get_request(self._domain_url, "form/{}".format(form_id))
 
+    # String -> ?
+    def get_attachment(self, form_id, attachment_name):
+        attachment_url = "form/attachment/{}/{}".format(form_id,
+                                                        attachment_name)
+        return self.get_request(self._domain_url, attachment_url)
+
     # None -> [List-of JSON]
     def get_groups(self):
         forms = self.get_request(self._domain_url, "group")
@@ -93,7 +99,7 @@ class HqApi(object):
 
     # String -> JSON
     def get_request(self, domain, action):
-        url = "{0}/{1}/".format(domain, action)
+        url = "{0}/{1}".format(domain, action)
         r = requests.get(
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
@@ -108,12 +114,17 @@ class HqApi(object):
 
 # None -> String
 def get_script_path():
-    return os.path.dirname(os.path.realpath(sys.argv[0]))
+    base_path = os.path.realpath(sys.argv[0])
+    if os.path.isdir(base_path):
+        return base_path
+    else:
+        return os.path.dirname(base_path)
 
 
-def main():
+def build():
     config = ConfigParser()
-    config.read(get_script_path() + "/auth.conf")
+    config_file = os.path.join(get_script_path(), "auth.conf")
+    config.read(config_file)
 
     BASE_URL = config.get('Server', 'url')
     DOMAIN = config.get('Server', 'project_space')
@@ -121,13 +132,17 @@ def main():
     PASSWORD = config.get('Server', 'password')
 
     VERSION = "v0.5"
-    hq_api = HqApi(BASE_URL, DOMAIN, VERSION, USERNAME, PASSWORD)
-    if len(sys.argv) > 3:
+    return HqApi(BASE_URL, DOMAIN, VERSION, USERNAME, PASSWORD)
+
+
+def main():
+    if len(sys.argv) > 4:
         filename = sys.argv[0]
         arg_count = len(sys.argv) - 1
         print("{} only accepts one argument, {} provided".format(filename,
                                                                  arg_count))
         sys.exit(0)
+    hq_api = build()
 
     dispatch_command(sys.argv[1:], hq_api)
 
@@ -136,23 +151,19 @@ def main():
 def dispatch_command(args, hq_api):
     command = args[0]
 
-    if command == 'upload_fixture':
-        filename = args[1]
-        print(filename)
-        if hq_api.upload_fixture(filename).status_code != 200:
-            sys.exit(1)
-    elif command == 'cases':
-        print(hq_api.get_cases())
-    elif command == 'case':
-        case_id = args[1]
-        print(hq_api.get_case(case_id))
-    elif command == 'forms':
-        hq_api.get_forms()
-    elif command == 'form':
-        form_id = args[1]
-        print(hq_api.get_form(form_id))
-    elif command == 'help':
-        print("")
+    def upload_fixture_and_exit(filename):
+        sys.exit(int(hq_api.upload_fixture(filename).status_code != 200))
+
+    dispatch = {'case': lambda: hq_api.get_case(args[1]),
+                'cases': lambda: hq_api.get_cases(),
+                'forms': lambda: hq_api.get_forms(),
+                'form': lambda: hq_api.get_form(args[1]),
+                'attachment': lambda: hq_api.get_attachment(args[1], args[2]),
+                'upload_fixture': lambda: upload_fixture_and_exit(args[1]),
+                'help': lambda: ""}
+
+    print(dispatch[command]())
+
     sys.exit(0)
 
 if __name__ == "__main__":
