@@ -16,8 +16,7 @@ class HqApi(object):
         self._api_version = version
         self._domain = domain
         self._base_url = base_url
-        self._domain_url = "{0}/a/{1}/api/{2}".format(base_url,
-                                                      domain, version)
+        self._domain_url = "{0}/a/{1}/api".format(base_url, domain)
 
     # None -> [List-of JSON]
     def get_cases(self):
@@ -41,7 +40,8 @@ class HqApi(object):
     def get_attachment(self, form_id, attachment_name):
         attachment_url = "form/attachment/{}/{}".format(form_id,
                                                         attachment_name)
-        return self.get_request(self._domain_url, attachment_url)
+        return self.get_request(self._domain_url, attachment_url,
+                                False, lambda r: r.content)
 
     # None -> [List-of JSON]
     def get_groups(self):
@@ -98,14 +98,19 @@ class HqApi(object):
         return r
 
     # String -> JSON
-    def get_request(self, domain, action):
+    def get_request(self, domain, action,
+                    include_version=True,
+                    unpack_fn=lambda r: r.json()):
         url = "{0}/{1}".format(domain, action)
+        if include_version:
+            url += "/" + self._api_version
+
         r = requests.get(
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
 
         if r.status_code == 200:
-            return r.json()
+            return unpack_fn(r)
         else:
             error_msg = "Request {0} failed (code {1})".format(url,
                                                                r.status_code)
@@ -154,11 +159,16 @@ def dispatch_command(args, hq_api):
     def upload_fixture_and_exit(filename):
         sys.exit(int(hq_api.upload_fixture(filename).status_code != 200))
 
+    def download_attachment(form_id, attachment_name):
+        attachment_bytes = hq_api.get_attachment(form_id, attachment_name)
+        with open(attachment_name, 'wb') as f:
+            f.write(attachment_bytes)
+
     dispatch = {'case': lambda: hq_api.get_case(args[1]),
                 'cases': lambda: hq_api.get_cases(),
                 'forms': lambda: hq_api.get_forms(),
                 'form': lambda: hq_api.get_form(args[1]),
-                'attachment': lambda: hq_api.get_attachment(args[1], args[2]),
+                'attachment': lambda: download_attachment(args[1], args[2]),
                 'upload_fixture': lambda: upload_fixture_and_exit(args[1]),
                 'help': lambda: ""}
 
