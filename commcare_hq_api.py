@@ -101,9 +101,10 @@ class HqApi(object):
     def get_request(self, domain, action,
                     include_version=True,
                     unpack_fn=lambda r: r.json()):
-        url = "{0}/{1}".format(domain, action)
         if include_version:
-            url += "/" + self._api_version
+            url = "{0}/{1}/{2}".format(domain, self._api_version, action)
+        else:
+            url = "{0}/{1}".format(domain, action)
 
         r = requests.get(
             url=url,
