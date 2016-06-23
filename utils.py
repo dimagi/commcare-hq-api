@@ -55,6 +55,7 @@ def dispatch_command(args, hq_api):
                     print("No new forms submitted since last check")
                     sys.exit(1)
 
+    # Integer -> None
     def assert_attachments(expected_count):
         attachment_count = get_latest_form_attachment_count(hq_api)
         if expected_count != attachment_count:
@@ -64,7 +65,7 @@ def dispatch_command(args, hq_api):
 
     dispatch = {'store_latest_form': lambda: store_latest_form_time(),
                 'assert_newer_form': lambda: assert_new_form_on_hq(),
-                'assert_attachments': lambda: assert_attachments(args[1]),
+                'assert_attachments': lambda: assert_attachments(int(args[1])),
                 'help': lambda: ""}
     print(dispatch[command]())
 
