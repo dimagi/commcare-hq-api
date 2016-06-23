@@ -20,7 +20,8 @@ def get_latest_form_attachment_count(hq_api):
     attachments = form['attachments']
     attachments_with_data = 0
     for attachment_name in attachments:
-        attachments_with_data += int(len(hq_api.get_attachment(form_id, attachment_name)) > 0)
+        file_size = len(hq_api.get_attachment(form_id, attachment_name))
+        attachments_with_data += int(file_size > 0)
     return attachments_with_data
 
 
