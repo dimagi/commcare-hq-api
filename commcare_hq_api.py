@@ -54,7 +54,7 @@ class HqApi(object):
 
     # String -> JSON
     def get_mobile_worker(self, user_id):
-        return self.get_request(self._domain_url, "user/{}".format(user_id))
+        return self.get_request(self._domain_url, "user/{}/?format=json".format(user_id))
 
     # None -> [List-of JSON]
     def get_web_users(self):
@@ -83,6 +83,15 @@ class HqApi(object):
     def get_fixture_item(self, fixture_id):
         return self.get_request(self._domain_url,
                                 "fixture/{}".format(fixture_id))
+
+    def update_mobile_worker(self, user_id, payload):
+        url = "{0}/a/{1}/api/{2}/user/{3}/".format(self._base_url, self._domain, self._api_version, user_id)
+        response = requests.put(
+            url=url,
+            data=payload,
+            headers={'content-type':'application/json'},
+            auth=HTTPBasicAuth(self._username, self._password))
+        return response
 
     # Filename -> None
     def upload_fixture(self, filename):
