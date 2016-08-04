@@ -25,12 +25,18 @@ def get_latest_form_attachment_count(hq_api):
     return attachments_with_data
 
 
+# String -> [String]
+def get_groups_for_user(hq_api, USER_ID):
+    user_json = hq_api.get_mobile_worker(USER_ID)
+    return user_json['groups']
+
+
 def main():
-    if len(sys.argv) > 3:
+    if len(sys.argv) > 4:
         filename = sys.argv[0]
         arg_count = len(sys.argv) - 1
-        print("{} only accepts one argument, {} provided".format(filename,
-                                                                 arg_count))
+        print("{} only accepts 2 arguments, {} provided".format(filename,
+                                                                arg_count))
         sys.exit(0)
     hq_api = commcare_hq_api.build()
 
@@ -63,10 +69,26 @@ def dispatch_command(args, hq_api):
                                                              attachment_count))
             sys.exit(1)
 
-    dispatch = {'store_latest_form': lambda: store_latest_form_time(),
-                'assert_newer_form': lambda: assert_new_form_on_hq(),
-                'assert_attachments': lambda: assert_attachments(int(args[1])),
-                'help': lambda: ""}
+    def assert_group_membership(USER_ID, GROUP_ID):
+        if GROUP_ID not in get_groups_for_user(hq_api, USER_ID):
+            sys.exit(1)
+
+    def set_user_group(user_id, group_id):
+        if group_id == "[]":
+            hq_api.update_mobile_worker(user_id, '{"groups": []}')
+        else:
+            hq_api.update_mobile_worker(
+                user_id,
+                '{"groups": ["' + group_id + '"]}')
+
+    dispatch = {
+        'store_latest_form': lambda: store_latest_form_time(),
+        'assert_newer_form': lambda: assert_new_form_on_hq(),
+        'assert_attachments': lambda: assert_attachments(int(args[1])),
+        'assert_group_membership': lambda: assert_group_membership(args[1], args[2]),
+        'set_user_group': lambda: set_user_group(args[1], args[2]),
+        'help': lambda: ""
+    }
     print(dispatch[command]())
 
     sys.exit(0)
