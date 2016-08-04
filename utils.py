@@ -36,7 +36,7 @@ def main():
         filename = sys.argv[0]
         arg_count = len(sys.argv) - 1
         print("{} only accepts 2 arguments, {} provided".format(filename,
-                                                                 arg_count))
+                                                                arg_count))
         sys.exit(0)
     hq_api = commcare_hq_api.build()
 
@@ -68,26 +68,27 @@ def dispatch_command(args, hq_api):
             print("{} attachments expected, {} found".format(expected_count,
                                                              attachment_count))
             sys.exit(1)
-    
 
     def assert_group_membership(USER_ID, GROUP_ID):
         if GROUP_ID not in get_groups_for_user(hq_api, USER_ID):
             sys.exit(1)
 
-
     def set_user_group(USER_ID, GROUP_ID):
         if GROUP_ID == "[]":
             hq_api.update_mobile_worker(USER_ID, '{"groups": []}')
         else:
-            hq_api.update_mobile_worker(USER_ID, '{"groups": ["' +  GROUP_ID + '"]}')
-        
+            hq_api.update_mobile_worker(
+                USER_ID,
+                '{"groups": ["' + GROUP_ID + '"]}')
 
-    dispatch = {'store_latest_form': lambda: store_latest_form_time(),
-                'assert_newer_form': lambda: assert_new_form_on_hq(),
-                'assert_attachments': lambda: assert_attachments(int(args[1])),
-                'assert_group_membership': lambda: assert_group_membership(args[1], args[2]),
-                'set_user_group': lambda: set_user_group(args[1], args[2]),
-                'help': lambda: ""}
+    dispatch = {
+        'store_latest_form': lambda: store_latest_form_time(),
+        'assert_newer_form': lambda: assert_new_form_on_hq(),
+        'assert_attachments': lambda: assert_attachments(int(args[1])),
+        'assert_group_membership': lambda: assert_group_membership(args[1], args[2]),
+        'set_user_group': lambda: set_user_group(args[1], args[2]),
+        'help': lambda: ""
+    }
     print(dispatch[command]())
 
     sys.exit(0)
