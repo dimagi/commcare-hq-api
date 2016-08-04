@@ -73,13 +73,13 @@ def dispatch_command(args, hq_api):
         if GROUP_ID not in get_groups_for_user(hq_api, USER_ID):
             sys.exit(1)
 
-    def set_user_group(USER_ID, GROUP_ID):
-        if GROUP_ID == "[]":
-            hq_api.update_mobile_worker(USER_ID, '{"groups": []}')
+    def set_user_group(user_id, group_id):
+        if group_id == "[]":
+            hq_api.update_mobile_worker(user_id, '{"groups": []}')
         else:
             hq_api.update_mobile_worker(
-                USER_ID,
-                '{"groups": ["' + GROUP_ID + '"]}')
+                user_id,
+                '{"groups": ["' + group_id + '"]}')
 
     dispatch = {
         'store_latest_form': lambda: store_latest_form_time(),
