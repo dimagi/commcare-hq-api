@@ -19,8 +19,8 @@ class HqApi(object):
         self._domain_url = "{0}/a/{1}/api".format(base_url, domain)
 
     # None -> [List-of JSON]
-    def get_cases(self):
-        cases = self.get_request(self._domain_url, "case")
+    def get_cases(self, params={}):
+        cases = self.get_request(self._domain_url, "case", query_params=params)
         return cases["objects"]
 
     # String -> JSON
@@ -86,8 +86,8 @@ class HqApi(object):
                                 "fixture/{}".format(fixture_id))
 
     def update_mobile_worker(self, user_id, payload):
-        url = "{0}/{1}/user/{2}/".format(self._domain_url, 
-                                         self._api_version, 
+        url = "{0}/{1}/user/{2}/".format(self._domain_url,
+                                         self._api_version,
                                          user_id)
         response = requests.put(
             url=url,
@@ -111,12 +111,16 @@ class HqApi(object):
 
     # String -> JSON
     def get_request(self, domain, action,
+                    query_params={},
                     include_version=True,
                     unpack_fn=lambda r: r.json()):
         if include_version:
             url = "{0}/{1}/{2}".format(domain, self._api_version, action)
         else:
             url = "{0}/{1}".format(domain, action)
+        query = "&".join([k + "=" + v for k, v in query_params.items()])
+        if query is not "":
+            url += "?" + query
 
         r = requests.get(
             url=url,

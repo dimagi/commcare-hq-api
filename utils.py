@@ -38,25 +38,26 @@ def get_latest_form_attachment_count(hq_api):
     return attachments_with_data
 
 
-# HqApi [JSON -> Boolean] -> None
-def close_case_with_condition(hq_api, pred):
+# HqApi String -> None
+def close_case_with_name(hq_api, name):
     """
     Close first case found in case list that satisfies the predicate.
     """
-    for case_json in hq_api.get_cases():
-        if pred(case_json):
-            case_id = case_json['case_id']
-            response_code = submit_case_close(hq_api._domain, hq_api._username,
-                                              hq_api._password, case_id)
-            if response_code >= 200 and response_code < 300:
-                print("Successfully closed {} case".format(case_id))
-                sys.exit(0)
-            else:
-                print(("Unable to close {} case"
-                       ", HTTP code {}").format(case_id, response_code))
-                sys.exit(1)
-    print("Couldn't find case that satisfies the predicate")
-    sys.exit(1)
+    cases_with_name = hq_api.get_cases(params={"name": name})
+    if len(cases_with_name) != 0:
+        case_id = cases_with_name[0]['case_id']
+        response_code = submit_case_close(hq_api._domain, hq_api._username,
+                                          hq_api._password, case_id)
+        if response_code >= 200 and response_code < 300:
+            print("Successfully closed {} case".format(case_id))
+            sys.exit(0)
+        else:
+            print(("Unable to close {} case"
+                   ", HTTP code {}").format(case_id, response_code))
+            sys.exit(1)
+    else:
+        print("Couldn't find case that satisfies the predicate")
+        sys.exit(1)
 
 
 # String -> [String]
@@ -106,16 +107,13 @@ def dispatch_command(args, hq_api):
                                                              attachment_count))
             sys.exit(1)
 
-    def close_pred(case_json):
-        return case_json['properties']['case_name'] == args[1]
-
     dispatch = {
         'store_latest_form': lambda: store_latest_form_time(),
         'assert_newer_form': lambda: assert_new_form_on_hq(hq_api),
         'assert_attachments': lambda: assert_attachments(int(args[1])),
         'assert_group_membership': lambda: assert_group_membership(hq_api, args[1], args[2]),
         'set_user_group': lambda: set_user_group(args[1], args[2]),
-        'close_case_named': lambda: close_case_with_condition(hq_api, close_pred),
+        'close_case_named': lambda: close_case_with_name(hq_api, args[1]),
         'help': lambda: HELP_MSG
     }
     print(dispatch[command]())
