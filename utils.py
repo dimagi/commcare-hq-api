@@ -2,6 +2,19 @@ from datetime import datetime
 import commcare_hq_api
 import sys
 import os
+from form_submission.case_close import submit_case_close
+
+HELP_MSG = """
+store_latest_form: Store the submission time of latest form in a text file
+assert_newer_form: Assert that lastest form submission is newer than last call
+                   to 'store_latest_form'
+assert_attachments count: Assert latest form has the expected attachment count
+assert_group_membership user_id group_id: Assert user is a member of a given
+                                          group
+set_user_group user_id group_id: Add a user to a group
+close_case_named name: Close the first case with the provided name
+help: show this message
+"""
 
 DATETIME_PATTERN = "%Y-%m-%dT%H:%M:%S.%f"
 LATEST_FORM_FILE = "latest_form_time.txt"
@@ -25,10 +38,89 @@ def get_latest_form_attachment_count(hq_api):
     return attachments_with_data
 
 
+# HqApi [JSON -> Boolean] -> None
+def close_case_with_condition(hq_api, pred):
+    """
+    Close first case found in case list that satisfies the predicate.
+    """
+    for case_json in hq_api.get_cases():
+        if pred(case_json):
+            case_id = case_json['case_id']
+            response_code = submit_case_close(hq_api._domain, hq_api._username,
+                                              hq_api._password, case_id)
+            if response_code >= 200 and response_code < 300:
+                print("Successfully closed {} case".format(case_id))
+                sys.exit(0)
+            else:
+                print(("Unable to close {} case"
+                       ", HTTP code {}").format(case_id, response_code))
+                sys.exit(1)
+    print("Couldn't find case that satisfies the predicate")
+    sys.exit(1)
+
+
 # String -> [String]
 def get_groups_for_user(hq_api, USER_ID):
     user_json = hq_api.get_mobile_worker(USER_ID)
     return user_json['groups']
+
+
+def assert_new_form_on_hq(hq_api):
+    if not os.path.exists(LATEST_FORM_FILE):
+        print("Couldn't find {} file".format(LATEST_FORM_FILE))
+        sys.exit(1)
+    else:
+        with open(LATEST_FORM_FILE, 'r') as form_file:
+            old_form_submit_time = int(form_file.readline())
+            if old_form_submit_time >= get_latest_form_time(hq_api):
+                print("No new forms submitted since last check")
+                sys.exit(1)
+
+
+def assert_group_membership(hq_api, user_id, group_id):
+    if group_id not in get_groups_for_user(hq_api, user_id):
+        sys.exit(1)
+
+
+def set_user_group(hq_api, user_id, group_id):
+    if group_id == "[]":
+        hq_api.update_mobile_worker(user_id, '{"groups": []}')
+    else:
+        hq_api.update_mobile_worker(
+            user_id,
+            '{"groups": ["' + group_id + '"]}')
+
+
+def dispatch_command(args, hq_api):
+    command = args[0]
+
+    def store_latest_form_time():
+        with open(LATEST_FORM_FILE, 'w') as form_file:
+            form_file.write(str(get_latest_form_time(hq_api)))
+
+    # Integer -> None
+    def assert_attachments(expected_count):
+        attachment_count = get_latest_form_attachment_count(hq_api)
+        if expected_count != attachment_count:
+            print("{} attachments expected, {} found".format(expected_count,
+                                                             attachment_count))
+            sys.exit(1)
+
+    def close_pred(case_json):
+        return case_json['properties']['case_name'] == args[1]
+
+    dispatch = {
+        'store_latest_form': lambda: store_latest_form_time(),
+        'assert_newer_form': lambda: assert_new_form_on_hq(hq_api),
+        'assert_attachments': lambda: assert_attachments(int(args[1])),
+        'assert_group_membership': lambda: assert_group_membership(hq_api, args[1], args[2]),
+        'set_user_group': lambda: set_user_group(args[1], args[2]),
+        'close_case_named': lambda: close_case_with_condition(hq_api, close_pred),
+        'help': lambda: HELP_MSG
+    }
+    print(dispatch[command]())
+
+    sys.exit(0)
 
 
 def main():
@@ -42,56 +134,6 @@ def main():
 
     dispatch_command(sys.argv[1:], hq_api)
 
-
-def dispatch_command(args, hq_api):
-    command = args[0]
-
-    def store_latest_form_time():
-        with open(LATEST_FORM_FILE, 'w') as form_file:
-            form_file.write(str(get_latest_form_time(hq_api)))
-
-    def assert_new_form_on_hq():
-        if not os.path.exists(LATEST_FORM_FILE):
-            print("Couldn't find {} file".format(LATEST_FORM_FILE))
-            sys.exit(1)
-        else:
-            with open(LATEST_FORM_FILE, 'r') as form_file:
-                old_form_submit_time = int(form_file.readline())
-                if old_form_submit_time >= get_latest_form_time(hq_api):
-                    print("No new forms submitted since last check")
-                    sys.exit(1)
-
-    # Integer -> None
-    def assert_attachments(expected_count):
-        attachment_count = get_latest_form_attachment_count(hq_api)
-        if expected_count != attachment_count:
-            print("{} attachments expected, {} found".format(expected_count,
-                                                             attachment_count))
-            sys.exit(1)
-
-    def assert_group_membership(USER_ID, GROUP_ID):
-        if GROUP_ID not in get_groups_for_user(hq_api, USER_ID):
-            sys.exit(1)
-
-    def set_user_group(user_id, group_id):
-        if group_id == "[]":
-            hq_api.update_mobile_worker(user_id, '{"groups": []}')
-        else:
-            hq_api.update_mobile_worker(
-                user_id,
-                '{"groups": ["' + group_id + '"]}')
-
-    dispatch = {
-        'store_latest_form': lambda: store_latest_form_time(),
-        'assert_newer_form': lambda: assert_new_form_on_hq(),
-        'assert_attachments': lambda: assert_attachments(int(args[1])),
-        'assert_group_membership': lambda: assert_group_membership(args[1], args[2]),
-        'set_user_group': lambda: set_user_group(args[1], args[2]),
-        'help': lambda: ""
-    }
-    print(dispatch[command]())
-
-    sys.exit(0)
 
 if __name__ == "__main__":
     main()
