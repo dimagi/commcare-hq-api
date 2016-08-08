@@ -112,7 +112,7 @@ def dispatch_command(args, hq_api):
         'assert_newer_form': lambda: assert_new_form_on_hq(hq_api),
         'assert_attachments': lambda: assert_attachments(int(args[1])),
         'assert_group_membership': lambda: assert_group_membership(hq_api, args[1], args[2]),
-        'set_user_group': lambda: set_user_group(args[1], args[2]),
+        'set_user_group': lambda: set_user_group(hq_api, args[1], args[2]),
         'close_case_named': lambda: close_case_with_name(hq_api, args[1]),
         'help': lambda: HELP_MSG
     }

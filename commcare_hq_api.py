@@ -41,7 +41,8 @@ class HqApi(object):
         attachment_url = "form/attachment/{}/{}".format(form_id,
                                                         attachment_name)
         return self.get_request(self._domain_url, attachment_url,
-                                False, lambda r: r.content)
+                                include_version=False,
+                                unpack_fn=lambda r: r.content)
 
     # None -> [List-of JSON]
     def get_groups(self):
