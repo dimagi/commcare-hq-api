@@ -16,7 +16,7 @@ close_case_named name: Close the first case with the provided name
 help: show this message
 """
 
-DATETIME_PATTERN = "%Y-%m-%dT%H:%M:%S.%f"
+DATETIME_PATTERN = "%Y-%m-%dT%H:%M:%S.%fZ"
 LATEST_FORM_FILE = "latest_form_time.txt"
 
 
