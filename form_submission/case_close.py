@@ -14,7 +14,6 @@ from form_submission.utils import submit_form
 
 ISO_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 SYSTEM_FORM_XMLNS = 'http://commcarehq.org/case'
-SYSTEM_USER_ID = 'system'
 SUBMISSION_FILENAME = "case_close.xml"
 
 HELP_MESSAGE = """
@@ -49,13 +48,13 @@ XML_TEMPLATE = """<?xml version='1.0' ?>
 
 # String String String String -> None
 def create_submission_file(filename, case_id, username, user_id):
-    submission_contents = format_update_form(case_id, username, user_id)
+    submission_contents = format_close_form(case_id, username, user_id)
     with open(filename, "w") as f:
         f.write(submission_contents)
 
 
 # String String String -> String
-def format_update_form(case_id, username, user_id):
+def format_close_form(case_id, username, user_id):
     """
     Fill-in the case close form template to create a valid xml form
     """
@@ -69,19 +68,18 @@ def format_update_form(case_id, username, user_id):
         'user_id': user_id,
         'case_id': case_id,
         'date_modified': now,
-        'user_id': SYSTEM_USER_ID,
     }
 
     return XML_TEMPLATE.format(**context)
 
 
 # String String String String -> Integer
-def submit_case_close(domain, username, password, case_id):
+def submit_case_close(domain, username, password, case_id, user_id):
     """
     Posts a form to CommCareHQ that closes a case
     """
     create_submission_file(SUBMISSION_FILENAME, case_id,
-                           username, SYSTEM_USER_ID)
+                           username, user_id)
     response_code = submit_form(SUBMISSION_FILENAME, username,
                                 password, domain)
 

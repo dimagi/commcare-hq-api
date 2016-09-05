@@ -12,12 +12,13 @@ assert_attachments count: Assert latest form has the expected attachment count
 assert_group_membership user_id group_id: Assert user is a member of a given
                                           group
 set_user_group user_id group_id: Add a user to a group
-close_case_named name: Close the first case with the provided name
+close_case_named name type user_id: Close the first case with the provided name
 help: show this message
 """
 
 DATETIME_PATTERN = "%Y-%m-%dT%H:%M:%S.%fZ"
 LATEST_FORM_FILE = "latest_form_time.txt"
+MAX_ARGS = 4
 
 
 # HqApi -> Integer
@@ -39,15 +40,19 @@ def get_latest_form_attachment_count(hq_api):
 
 
 # HqApi String -> None
-def close_case_with_name(hq_api, name):
+def close_case_with_name(hq_api, name, type=None, user_id=None):
     """
     Close first case found in case list that satisfies the predicate.
     """
-    cases_with_name = hq_api.get_cases(params={"name": name})
+    user_id = "system" if user_id is None else user_id
+    params = {"name": name, "closed": "False"}
+    if type is not None:
+        params["case_type"] = type
+    cases_with_name = hq_api.get_cases(params=params)
     if len(cases_with_name) != 0:
         case_id = cases_with_name[0]['case_id']
         response_code = submit_case_close(hq_api._domain, hq_api._username,
-                                          hq_api._password, case_id)
+                                          hq_api._password, case_id, user_id)
         if response_code >= 200 and response_code < 300:
             print("Successfully closed {} case".format(case_id))
             sys.exit(0)
@@ -113,7 +118,7 @@ def dispatch_command(args, hq_api):
         'assert_attachments': lambda: assert_attachments(int(args[1])),
         'assert_group_membership': lambda: assert_group_membership(hq_api, args[1], args[2]),
         'set_user_group': lambda: set_user_group(hq_api, args[1], args[2]),
-        'close_case_named': lambda: close_case_with_name(hq_api, args[1]),
+        'close_case_named': lambda: close_case_with_name(hq_api, *args[1:]),
         'help': lambda: HELP_MSG
     }
     print(dispatch[command]())
@@ -122,11 +127,12 @@ def dispatch_command(args, hq_api):
 
 
 def main():
-    if len(sys.argv) > 4:
+    arg_count = len(sys.argv) - 1
+    if arg_count > MAX_ARGS:
         filename = sys.argv[0]
-        arg_count = len(sys.argv) - 1
-        print("{} only accepts 2 arguments, {} provided".format(filename,
-                                                                arg_count))
+        print("{} only accepts {} arguments, {} provided".format(filename,
+                                                                 MAX_ARGS,
+                                                                 arg_count))
         sys.exit(0)
     hq_api = commcare_hq_api.build()
 
