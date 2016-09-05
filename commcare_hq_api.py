@@ -8,6 +8,20 @@ import sys
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from configparser import ConfigParser
 
+HELP_MSG = """
+cases: show the most 20 recent cases
+case id: get the case associated with the given id
+forms: show the most recent forms
+form id: get the form associated with the given id
+attachment form_id attachment_id: downloads the form attachment
+upload_fixture fixture.xls: uploads the excel file as a fixutre
+users: gets mobile workers
+user user_id: gets mobile worker associated with the given id
+user_delete user_id: delete the mobile worker
+change_password user_id new_password: update password for mobile worker
+help: show this message
+"""
+
 
 class HqApi(object):
     def __init__(self, base_url, domain, version, username, password):
@@ -96,6 +110,19 @@ class HqApi(object):
             headers={'content-type': 'application/json'},
             auth=HTTPBasicAuth(self._username, self._password))
         return response
+
+    def delete_mobile_worker(self, user_id):
+        url = "{0}/{1}/user/{2}/".format(self._domain_url,
+                                         self._api_version,
+                                         user_id)
+        response = requests.delete(
+            url=url,
+            auth=HTTPBasicAuth(self._username, self._password))
+        return response
+
+    def password_update(self, user_id, new_password):
+        password_payload = '{"password": "' + new_password + '"}'
+        return self.update_mobile_worker(user_id, password_payload)
 
     # Filename -> None
     def upload_fixture(self, filename):
@@ -188,7 +215,11 @@ def dispatch_command(args, hq_api):
                 'form': lambda: hq_api.get_form(args[1]),
                 'attachment': lambda: download_attachment(args[1], args[2]),
                 'upload_fixture': lambda: upload_fixture_and_exit(args[1]),
-                'help': lambda: ""}
+                'user_delete': lambda: hq_api.delete_mobile_worker(args[1]),
+                'change_password': lambda: hq_api.password_update(*args[1:]),
+                'users': lambda: hq_api.get_mobile_workers(),
+                'user': lambda: hq_api.get_mobile_worker(args[1]),
+                'help': lambda: HELP_MSG}
 
     print(dispatch[command]())
 
