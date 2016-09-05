@@ -121,7 +121,7 @@ class HqApi(object):
         return response
 
     def password_update(self, user_id, new_password):
-        password_payload = '{"password", "' + new_password + '"}'
+        password_payload = '{"password": "' + new_password + '"}'
         return self.update_mobile_worker(user_id, password_payload)
 
     # Filename -> None
