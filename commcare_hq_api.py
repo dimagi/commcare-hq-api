@@ -123,14 +123,16 @@ class HqApi(object):
             "first_name": "Temporary",
             "last_name": "User",
         }
-        print("Data: ", data)
         response = requests.post(
             url=url,
             json=data,
             headers={'content-type': 'application/json'},
             auth=HTTPBasicAuth(self._username, self._password))
-        print("Response ", response.content)
-        return response
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Sucessfully created worker with username ", username)
+            return response
+        else:
+            raise Exception("Unable to create worker with username ", username)
 
     def delete_mobile_worker(self, user_id):
         url = "{0}/{1}/user/{2}/".format(self._domain_url,
@@ -139,15 +141,22 @@ class HqApi(object):
         response = requests.delete(
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
-        return response
+        if response.status_code >= 200 and response.status_code < 300:
+            print("Successfully deleted worker with user_id ", user_id)
+            return response
+        else:
+            raise Exception("Unable to delete worker with user_id ", user_id)
 
     def delete_worker_named(self, username):
         workers = self.get_mobile_workers()
         domained_username = "{0}@{1}.commcarehq.org".format(username,
                                                             self._domain)
-        user_id = [worker.get('id') for worker in workers.get('objects') if worker.get('username') == domained_username][0] # better be only one of these
-        response = self.delete_mobile_worker(user_id)
-        print("Delete response ", response.content)
+        matching_ids = [worker.get('id') for worker in workers.get('objects') if worker.get('username') == domained_username]
+        if len(matching_ids) != 1:
+            raise Exception("Username {0} matched {1} workers".format(domained_username, matching_ids))
+        user_id = matching_ids[0]
+        return self.delete_mobile_worker(user_id)
+
 
     def password_update(self, user_id, new_password):
         password_payload = '{"password": "' + new_password + '"}'
