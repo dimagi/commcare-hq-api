@@ -112,14 +112,14 @@ class HqApi(object):
             auth=HTTPBasicAuth(self._username, self._password))
         return response
 
-    def create_mobile_worker(self, username):
+    def create_mobile_worker(self, username, password):
         url = "{0}/{1}/user/".format(self._domain_url,
                                      self._api_version)
         domained_username = "{0}@{1}.commcarehq.org".format(username,
                                                             self._domain)
         data = {
             "username": domained_username,
-            "password": 'Password123!',
+            "password": password,
             "first_name": "Temporary",
             "last_name": "User",
         }
@@ -140,6 +140,14 @@ class HqApi(object):
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
         return response
+
+    def delete_worker_named(self, username):
+        workers = self.get_mobile_workers()
+        domained_username = "{0}@{1}.commcarehq.org".format(username,
+                                                            self._domain)
+        user_id = [worker.get('id') for worker in workers.get('objects') if worker.get('username') == domained_username][0] # better be only one of these
+        response = self.delete_mobile_worker(user_id)
+        print("Delete response ", response.content)
 
     def password_update(self, user_id, new_password):
         password_payload = '{"password": "' + new_password + '"}'
@@ -236,12 +244,13 @@ def dispatch_command(args, hq_api):
                 'form': lambda: hq_api.get_form(args[1]),
                 'attachment': lambda: download_attachment(args[1], args[2]),
                 'upload_fixture': lambda: upload_fixture_and_exit(args[1]),
-                'user_create': lambda: hq_api.create_mobile_worker(args[1]),
+                'user_create': lambda: hq_api.create_mobile_worker(args[1], args[2]),
                 'user_delete': lambda: hq_api.delete_mobile_worker(args[1]),
                 'change_password': lambda: hq_api.password_update(*args[1:]),
                 'users': lambda: hq_api.get_mobile_workers(),
                 'user': lambda: hq_api.get_mobile_worker(args[1]),
-                'help': lambda: HELP_MSG}
+                'help': lambda: HELP_MSG,
+                'delete_worker_named': lambda: hq_api.delete_worker_named(args[1])}
 
     print(dispatch[command]())
 
