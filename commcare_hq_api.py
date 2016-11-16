@@ -7,6 +7,7 @@ import requests
 import sys
 from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 from configparser import ConfigParser
+import json
 
 HELP_MSG = """
 cases: show the most 20 recent cases
@@ -111,6 +112,26 @@ class HqApi(object):
             auth=HTTPBasicAuth(self._username, self._password))
         return response
 
+    def create_mobile_worker(self, username):
+        url = "{0}/{1}/user/".format(self._domain_url,
+                                     self._api_version)
+        domained_username = "{0}@{1}.commcarehq.org".format(username,
+                                                            self._domain)
+        data = {
+            "username": domained_username,
+            "password": 'Password123!',
+            "first_name": "Temporary",
+            "last_name": "User",
+        }
+        print("Data: ", data)
+        response = requests.post(
+            url=url,
+            json=data,
+            headers={'content-type': 'application/json'},
+            auth=HTTPBasicAuth(self._username, self._password))
+        print("Response ", response.content)
+        return response
+
     def delete_mobile_worker(self, user_id):
         url = "{0}/{1}/user/{2}/".format(self._domain_url,
                                          self._api_version,
@@ -127,7 +148,7 @@ class HqApi(object):
     # Filename -> None
     def upload_fixture(self, filename):
         file_data = {'file-to-upload':
-                     (filename, open(filename, 'rb'), 'multipart/form-data')}
+                         (filename, open(filename, 'rb'), 'multipart/form-data')}
         url = "{0}/a/{1}/fixtures/fixapi/".format(self._base_url, self._domain)
         r = requests.post(
             url=url,
@@ -215,6 +236,7 @@ def dispatch_command(args, hq_api):
                 'form': lambda: hq_api.get_form(args[1]),
                 'attachment': lambda: download_attachment(args[1], args[2]),
                 'upload_fixture': lambda: upload_fixture_and_exit(args[1]),
+                'user_create': lambda: hq_api.create_mobile_worker(args[1]),
                 'user_delete': lambda: hq_api.delete_mobile_worker(args[1]),
                 'change_password': lambda: hq_api.password_update(*args[1:]),
                 'users': lambda: hq_api.get_mobile_workers(),
@@ -224,6 +246,7 @@ def dispatch_command(args, hq_api):
     print(dispatch[command]())
 
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
