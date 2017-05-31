@@ -109,6 +109,7 @@ class HqApi(object):
             data=payload,
             headers={'content-type': 'application/json'},
             auth=HTTPBasicAuth(self._username, self._password))
+        print("Response code: " + str(response.status_code))
         return response
 
     def create_mobile_worker(self, username, password):
@@ -125,6 +126,7 @@ class HqApi(object):
             json=data,
             headers={'content-type': 'application/json'},
             auth=HTTPBasicAuth(self._username, self._password))
+        print("Response code: " + str(response.status_code))
         if response.status_code >= 200 and response.status_code < 300:
             print("Sucessfully created worker with username ", username)
             return response
@@ -142,6 +144,7 @@ class HqApi(object):
         response = requests.delete(
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
+        print("Response code: " + str(response.status_code))
         if response.status_code >= 200 and response.status_code < 300:
             print("Successfully deleted worker with user_id ", user_id)
             return response
@@ -175,6 +178,7 @@ class HqApi(object):
             data={'replace': 'true'},
             auth=HTTPDigestAuth(self._username, self._password)
         )
+        print("Response code: " + str(r.status_code))
         return r
 
     # String -> JSON
@@ -193,7 +197,7 @@ class HqApi(object):
         r = requests.get(
             url=url,
             auth=HTTPBasicAuth(self._username, self._password))
-
+        print("Response code: " + str(r.status_code))
         if r.status_code == 200:
             return unpack_fn(r)
         else:
