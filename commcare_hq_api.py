@@ -176,7 +176,7 @@ class HqApi(object):
             url=url,
             files=file_data,
             data={'replace': 'true'},
-            auth=HTTPDigestAuth(self._username, self._password)
+            auth=HTTPBasicAuth(self._username, self._password)
         )
         print("Response code: " + str(r.status_code))
         return r
