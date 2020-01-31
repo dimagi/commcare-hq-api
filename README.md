@@ -1,3 +1,7 @@
+**This is an unsupported and unmaintained library**
+
+-----
+
 # CommCare HQ API Library
 Work-in-progress Python library for accessing CommCare HQ API end-points.
 
